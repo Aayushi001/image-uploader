@@ -1,0 +1,26 @@
+<script>
+    function previewFile(){
+        var file    = document.querySelector('input[type=file]').files[0]; 
+       var reader  = new FileReader();
+
+       reader.onloadend = function () {
+           var img = new Image();
+           img.src = this.result;
+           img.onload = function(){
+               console.log(this.height);
+               console.log(this.width);
+           }
+       }
+
+       if (file) {
+           reader.readAsDataURL(file); //reads the data as a URL
+       } else {
+           console.error("File parsing failed");
+       }
+    }
+</script>
+<form method="POST" action="/upload" enctype="multipart/form-data">
+    <input id="file" onchange="previewFile()" type="file" name = "image" accept="image/*"/>
+    <br>
+    <button type="submit" name = "upload">Submit</button>
+</form>
