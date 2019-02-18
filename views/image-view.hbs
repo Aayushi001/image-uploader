@@ -1,0 +1,12 @@
+<div class="container">
+    <div class="row">
+        <h3 style="margin-left : 20px;">Uploaded Images</h3>
+    </div>
+    {{#each images}}
+    <div class="row" style="margin-top : 20px;">
+        <div class=" col-md-10">
+            <img src="{{this.data}}">
+        </div>
+    </div>
+    {{/each}}
+</div>

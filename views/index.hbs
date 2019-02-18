@@ -1,26 +1,121 @@
-<script>
-    function previewFile(){
-        var file    = document.querySelector('input[type=file]').files[0]; 
-       var reader  = new FileReader();
 
-       reader.onloadend = function () {
+
+<script>
+      function previewFile(){
+        var file    = document.querySelector('input[type=file]').files[0]; 
+        var reader  = new FileReader();
+
+        reader.onloadend = function () {
            var img = new Image();
            img.src = this.result;
+           document.getElementById('originalImg').setAttribute("src", img.src);
            img.onload = function(){
-               console.log(this.height);
-               console.log(this.width);
-           }
-       }
-
-       if (file) {
+               if(this.height == 1200 && this.width == 1200){
+                   document.getElementById('btn-container').style.display = "block";
+               }
+               else{
+                   alert("Please choose image of dimensions 1200 X 1200");
+               }      
+            }
+        }
+        if (file) {
            reader.readAsDataURL(file); //reads the data as a URL
-       } else {
+        } else {
            console.error("File parsing failed");
-       }
+        }
+    }
+
+    function cropImage(){
+        var $image = $('#originalImg');
+        var croppedImage = $image.cropper('getCroppedCanvas').toDataURL('image/jpeg');
+        $image.cropper('destroy');
+        document.getElementById('cropped-image-container').style.display = "block";
+        document.getElementById('croppedImg').setAttribute("src", croppedImage);
+    }
+
+    function cropBoxSelector(width, height){
+        console.log("fn called");
+        var $image = $('#originalImg');
+
+        $image.cropper({
+        cropBoxMovable : true,
+        cropBoxResizable : false,
+        zoomable : false,
+        zoomOnTouch : false,
+        dragMode : 'none',
+        ready : function(){
+            console.log("ready");
+        },
+        crop: function(event) {
+            console.log("crop");
+            //console.log(event.detail.x);
+            //console.log(event.detail.y);
+        }
+        });
+
+        $image.cropper('setCropBoxData', {height : height, width : width});
+        $image.data('cropper').cropBoxData.height = height;
+        $image.data('cropper').cropBoxData.maxHeight = height;
+        $image.data('cropper').cropBoxData.width = width;
+        $image.data('cropper').cropBoxData.maxWidth = width;
+    }
+
+    function uploadImage(){
+        console.log("upload called");
+        var imageData = document.getElementById('croppedImg').src;
+        $.ajax({
+        type: 'POST',
+        data: {data : imageData},
+        url: 'http://localhost:3000/upload',
+        success: function (data) {
+            if(data['code'] == "okay"){
+                alert("Image uploaded to dropbox successfully!");
+            }
+            else{
+                alert("Oops! Something went wrong.");
+            }
+        }
+        });
     }
 </script>
-<form method="POST" action="/upload" enctype="multipart/form-data">
-    <input id="file" onchange="previewFile()" type="file" name = "image" accept="image/*"/>
-    <br>
-    <button type="submit" name = "upload">Submit</button>
+
+{{!-- HTML STARTS HERE --}}
+
+
+<form action="/viewImages" method="GET"> 
+    <div class="form-group">
+        <label for="file">Choose Image to be uploaded</label>
+        <input type="file" class="form-control-file" id="file" onchange="previewFile()" type="file" name = "image" accept="image/*">
+    </div>
+    <button class="btn btn-large btn-primary">View Uploaded Images</button>
+
 </form>
+
+
+<div class="container-fluid" id = "cropped-image-container" style="display : none; margin: 30px;">
+        <div class="row">
+            <div class="offset-md-3 col-md-8">
+                <img id = "croppedImg" name = "croppedImg">
+                <button class="btn btn-lg btn-danger" style="float: right;" onclick = "uploadImage()" >Submit</button>
+            </div>
+        </div>
+    </div>
+
+<div class="container-fluid" id="btn-container" style="display : none; margin-top:30px;">
+    <div class="row" style="margin-left : 40px;">
+        {{#each sizes}}
+            <div class="col-md-2">
+                <button class="btn btn-md btn-primary" style="width:100%;" onclick = "cropBoxSelector({{this.width}}, {{this.height}})"> {{this.width}} X {{this.height}} </button>
+            </div>
+        {{/each}}
+        <div class="col-md-2">
+            <button class="btn btn-md btn-danger" style="width:100%;" onclick = "cropImage()"> Crop </button></div>
+    </div>
+    <div style="margin: 20px; width: 1200px; height: 1200px;">
+        <img style="width: 1200px; height: 1200px;" id = "originalImg">
+    </div>
+</div>
+
+
+
+

@@ -1,41 +1,47 @@
 var express = require('express');
 var router = express.Router();
-var path = require('path');
-const multer = require('multer');
-const Resize = require('../resize');
-//const Custom = require('../public/javascripts/custom');
-var DIR = '../public/images';
-
-
-//define the type of upload multer would be doing and pass in its destination, in our case, its a single file with the name photo
-var upload = multer({
-  dest: DIR,  
-  limits: {
-  fileSize: 4 * 1024 * 1024,
-}});
-
+const uuidv4 = require('uuid/v4');
+var fetch = require('isomorphic-fetch');
+var access_token = "xX8wrPHWb9AAAAAAAAAA3r9LPG6YsrewCk3inREC-iP1G8p2TEku4YEB_aTEzdru";
+var Dropbox = require('dropbox').Dropbox;
+var dbx = new Dropbox({ accessToken: access_token });
+var uploadedImages = [];
 
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index');
+  const data = {
+    sizes : [
+      {name : "horizontal", height : 450, width : 755},
+      {name : "vertical", height : 450, width : 365},
+      {name : "horizontal-small", height : 212, width : 365},
+      {name : "horizontalgallery", height : 380, width : 380}
+    ]
+  };
+  res.render('index', data);
 });
 
-router.post('/upload', upload.single('image'), async function (req, res) {
-  var fs = require('fs');
-  //var custom = new Custom();
-  //custom.methods.checkImageSize(1200,1200, req.file);
-  const imageDirectory = path.join(__dirname, '../public/images');
-  const fileUpload = new Resize(imageDirectory);
-  if (!req.file) {
-    res.status(401).json({error: 'Please provide an image'});
-  }
-  var imagePath = req.file.path;
-  var bitmap = fs.readFileSync(imagePath);
-  imagePath = new Buffer(bitmap)
-  const filename = fileUpload.save(imagePath);
-  console.log(filename);
-  return res.status(200).json({ name: filename });
-})
+router.post('/upload', async function (req, res) {
+  var imageData = req.body.data;
+  uploadedImages.push({data : imageData});
+  let buff = new Buffer(imageData.split(',')[1], 'base64');  
+  var fileName = `/${uuidv4()}.png`
+  dbx.filesUpload({path: fileName , contents: buff})
+          .then(function(response) {
+            res.json({code : "okay"});
+          })
+          .catch(function(error) {
+            console.error(error);
+          });
+ })
+
+ router.get('/viewImages', (req,res,next) => {
+   if(uploadedImages.length == 0){
+     alert("Sorry! You haven't uploaded any image.");
+     return;
+   }
+   const data = { images : uploadedImages};
+   res.render('image-view', data);
+ });
 
 module.exports = router;
