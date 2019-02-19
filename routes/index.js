@@ -37,8 +37,7 @@ router.post('/upload', async function (req, res) {
 
  router.get('/viewImages', (req,res,next) => {
    if(uploadedImages.length == 0){
-     alert("Sorry! You haven't uploaded any image.");
-     return;
+     res.render('image-view');
    }
    const data = { images : uploadedImages};
    res.render('image-view', data);
